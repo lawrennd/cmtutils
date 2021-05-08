@@ -1239,7 +1239,7 @@ class area_chair_read:
       if conference == 'nips':
           conference = 'ac'
       self.filename = conference + str(year) + '.txt'
-      fname = os.path.join(nips_data_directory, 'conference-committees', self.filename)
+      fname = os.path.join(cmt_data_directory, 'conference-committees', self.filename)
       self.chairs = []
       import csv
       with open(fname, 'rb') as csvfile:
@@ -2065,7 +2065,7 @@ def normalise(word):
     delim = '\t'
     word = word.lower()
     word = lemmatizer.lemmatize(word)
-    word = stemmer.stem_word(word)
+    word = stemmer.stem(word)
     return word
 
 def acceptable_word(word):
