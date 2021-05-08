@@ -539,7 +539,7 @@ class papers:
 
     def load_subjects(self, filename = 'Paper Subject Areas.xls'):
         """Load paper subject areas from a CMT export file."""
-        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Paper ID', dataframe=True, worksheet_number=1)
+        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Paper ID', header=2, dataframe=True, worksheet_number=1)
         data.items.reset_index(inplace=True)
         data.items.rename(columns={'index':'Paper ID'}, inplace=True)
         #reviewer_subject.replace(to_replace
