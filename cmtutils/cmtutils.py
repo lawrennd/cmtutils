@@ -1458,6 +1458,19 @@ def read_xl_or_csv(filename, header, mapping, index_col, dataframe, parse_dates=
     else:
         raise ValueError("Unknown file extension: " + ext)
 
+class cmt_reviewers_read:
+    """
+    Read information from a CMT export file into the standard Reviewers
+    format.
+    """
+    def __init__(self, filename='Conflict Domains.xls', header=2, dataframe=False):
+        mapping = {'MiddleInitial': 'MiddleNames',
+                   'Organization' : 'Institute',
+                   'Last Name': 'LastName',
+                   'First Name': 'FirstName',
+                   'Reviewer Type': 'ReviewerType'}
+        data = read_xl_or_csv(filename, header, mapping, index_col="Email", dataframe)
+        self.reviewers = data.items
 
 
 
