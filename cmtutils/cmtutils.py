@@ -1469,7 +1469,11 @@ class cmt_reviewers_read:
                    'Last Name': 'LastName',
                    'First Name': 'FirstName',
                    'Reviewer Type': 'ReviewerType'}
-        data = read_xl_or_csv(filename, header, mapping, index_col="Email", dataframe)
+        data = read_xl_or_csv(filename=filename,
+                              header=header,
+                              mapping=mapping,
+                              index_col="Email",
+                              dataframe=dataframe)
         self.reviewers = data.items
 
 
