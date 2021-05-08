@@ -6,7 +6,7 @@ from datetime import timedelta
 import numpy as np
 import os
 
-from config import *
+from cmtutils.config import *
 
 
 # Date of different review events.
@@ -77,9 +77,9 @@ def late_early_statistic(reviews, column, ylim):
     "Compute a statistic for late reviews and a statistic for early reviews"
     first_entered = reviews.sort(columns='LastUpdated', ascending=False).drop_duplicates(subset=['ID', 'Email'],take_last=True).sort(columns='LastUpdated')
     cat1 = first_entered[column][first_entered.LastUpdated<events['reviews']]
-    print "On time reviewers", column + ":", cat1.mean(), '+/-', 2*np.sqrt(cat1.var()/cat1.count())
+    print("On time reviewers", column + ":", cat1.mean(), '+/-', 2*np.sqrt(cat1.var()/cat1.count()))
     cat2 = first_entered[column][(first_entered.LastUpdated>events['reviews'])& (first_entered.LastUpdated < events['rebuttal_start'])]
-    print "Chased reviewers", column + ":", cat2.mean(), '+/-', 2*np.sqrt(cat2.var()/cat2.count())
+    print("Chased reviewers", column + ":", cat2.mean(), '+/-', 2*np.sqrt(cat2.var()/cat2.count()))
     fix, ax = plt.subplots()
     ax.bar([0.6, 1.6],
            [cat1.mean(), cat2.mean()],
@@ -91,7 +91,7 @@ def late_early_statistic(reviews, column, ylim):
     ax.set_xticklabels(['On time reviews', 'Late Reviews'])
     from scipy.stats import ttest_ind
     vals = ttest_ind(cat1, cat2)
-    print "t-statistic is", vals[0], "and p-value is", vals[1]
+    print("t-statistic is", vals[0], "and p-value is", vals[1])
 
 # def top_papers(reviews):
 #     """Compute the top review levels."""

@@ -18,7 +18,7 @@ from pods.notebook import display_url
 
 # interface to google docs
 import pods
-from config import *
+from cmtutils.config import *
 
 conf_short_name = config.get('conference', 'short_name')
 conf_year = config.get('conference', 'year')
@@ -41,6 +41,7 @@ def my_format(num,length=3):
 # HTML Stripper from this stackoverflow post: http://stackoverflow.com/questions/753052/strip-html-from-strings-in-python
 class MLStripper(HTMLParser):
     def __init__(self):
+        HTMLParser.__init__(self)        
         self.reset()
         self.fed = []
     def handle_data(self, d):
@@ -179,14 +180,14 @@ class review_report:
 
             """ + chair_informal_names + "<br>\n" + conf_short_name + ' ' + conf_year + " Program Chairs"
 
-        for email, papers in sendto_dict.iteritems():
+        for email, papers in sendto_dict.items():
             print("Sending mails summarizing papers", ', '.join(papers), 'to', email)
         ans = raw_input('Are you sure you want to send mails (Y/N)?')
         if ans=='Y':
             mailer = gmail.email(gmail_username=gmail_account)
-            for email, papers in sendto_dict.iteritems():
+            for email, papers in sendto_dict.items():
                 body = ''
-                for id, report in self.attention_report.loc[papers][self.attention_report.loc[papers].attention_score>attention_threshold].sort(columns=rankby, ascending=False).iterrows():
+                for id, report in self.attention_report.loc[papers][self.attention_report.loc[papers].attention_score>attention_threshold].sort_values(by=rankby, ascending=False).iterrows():
                     body += report.comments
                 if len(body)>0:
                     email_text = intro + body + closing
@@ -197,7 +198,7 @@ class review_report:
         html = ''
         max_return = 50
         count = 0
-        for id, paper in self.attention_report.sort(columns='attention_score', ascending=False).iterrows():
+        for id, paper in self.attention_report.sort_values(by='attention_score', ascending=False).iterrows():
             html += paper.comments
             count += 1
             if count > 50:
@@ -219,7 +220,7 @@ class review_report:
         """Generate a paragraph of comments for each paper."""
         self.generate_html_comments()
         self.comments = {}
-        for paper, comments in self.html_comments.iteritems():
+        for paper, comments in self.html_comments.items():
             self.comments[paper] = strip_tags(self.html_comments[paper])
 
     def generate_html_comments(self):
@@ -240,7 +241,7 @@ class review_report:
             self.html_comments[paper] = html_comment
             attention_scores[paper] = attention_score
         self.attention_report = pd.DataFrame({'comments': pd.Series(self.html_comments), 'attention_score':pd.Series(attention_scores)})
-        self.attention_report.sort(columns='attention_score', inplace=True, ascending=False)
+        self.attention_report.sort_values(by='attention_score', inplace=True, ascending=False)
 
 
     def spreadsheet_comments(self):
@@ -311,7 +312,7 @@ class review_report:
         column_sort_order = ['attention_score', 'prob_accept']
 
         self.attention_report = self.attention_report[column_presentation_order]
-        self.attention_report.sort(column_sort_order, inplace=True,ascending=False)
+        self.attention_report.sort_values(column_sort_order, inplace=True,ascending=False)
 
     def issues(self, paper):
         """Identify the potential issues with a given paper."""
@@ -1665,7 +1666,7 @@ class reviewerdb:
         """
         id = self.match_reviewer(reviewer, yes=yes, query=query, match_firstname=match_firstname, match_lastname=match_lastname)
         if id:
-            for field, value in fields.iteritems():
+            for field, value in fields.items():
                 self.update_field(id, field, value)
 
     def match_tpms_status(self, tpms, status='unavailable'):
