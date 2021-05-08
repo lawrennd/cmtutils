@@ -1042,7 +1042,7 @@ class tpms:
         #download_url(url, writename)
         self.reviewers = []
         import csv
-        with open(writename, 'rb') as csvfile:
+        with open(writename, 'r') as csvfile:
             file_reader = csv.reader(csvfile, delimiter=',')
             for row in file_reader:
                 if len(row)>3:
