@@ -34,7 +34,7 @@ def reviews_before(reviews, date):
     "Give a review snapshot of reviews before a certain date."
     indices = (((reviews.LastUpdated<=date) & (reviews.LastSeen>date))
                | ((reviews.LastUpdated<=date) & (reviews.LastSeen.isnull())))
-    return reviews[indices].sort(columns='LastUpdated').drop_duplicates(subset=['Email', 'ID'], take_last=True)
+    return reviews[indices].sort_values(by='LastUpdated').drop_duplicates(subset=['Email', 'ID'], keep='last')
 
 def reviews_status(reviews, datetime, column=None):
     """Give a snapshot of the reviews at any given time. Use multi-index across ID
@@ -55,7 +55,7 @@ def plot_deadlines(ax):
 
 def evolving_statistic(reviews, column, window=4):
     "Plot a particular review statistic mean as it evolves over time."
-    first_entered = reviews.sort(columns='LastUpdated', ascending=False).drop_duplicates(subset=['ID', 'Email'],take_last=True).sort(columns='LastUpdated')
+    first_entered = reviews.sort_values(by='LastUpdated', ascending=False).drop_duplicates(subset=['ID', 'Email'],keep='last').sort_values(by='LastUpdated')
 
     df = pd.DataFrame(index=review_date_range, columns=[column + ' mean',
                                                               column + ' std',
@@ -75,7 +75,7 @@ def evolving_statistic(reviews, column, window=4):
 
 def late_early_statistic(reviews, column, ylim):
     "Compute a statistic for late reviews and a statistic for early reviews"
-    first_entered = reviews.sort(columns='LastUpdated', ascending=False).drop_duplicates(subset=['ID', 'Email'],take_last=True).sort(columns='LastUpdated')
+    first_entered = reviews.sort_values(by='LastUpdated', ascending=False).drop_duplicates(subset=['ID', 'Email'],keep='last').sort_values(by='LastUpdated')
     cat1 = first_entered[column][first_entered.LastUpdated<events['reviews']]
     print("On time reviewers", column + ":", cat1.mean(), '+/-', 2*np.sqrt(cat1.var()/cat1.count()))
     cat2 = first_entered[column][(first_entered.LastUpdated>events['reviews'])& (first_entered.LastUpdated < events['rebuttal_start'])]
