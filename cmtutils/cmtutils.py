@@ -14,10 +14,19 @@ from html.parser import HTMLParser
 # General set up.
 
 from pods.util import download_url
-from pods.notebook import display_url
+
+def display_url(target):
+    """Displaying URL in an IPython notebook to allow the user to click and check on information. With thanks to Fernando Perez for putting together the implementation!
+    :param target: the url to display.
+    :type target: string."""
+
+    prefix = u"http://" if not target.startswith("http") else u""
+    target = prefix + target
+    display(HTML(u'<a href="{t}" target=_blank>{t}</a>'.format(t=target)))
 
 # interface to google docs
-import pods
+import googoal
+
 from cmtutils.config import *
 
 conf_short_name = config.get('conference', 'short_name')
@@ -539,7 +548,7 @@ class papers:
 
     def load_subjects(self, filename = 'Paper Subject Areas.xls'):
         """Load paper subject areas from a CMT export file."""
-        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Paper ID', dataframe=True, worksheet_number=1)
+        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Paper ID', header=2, dataframe=True, worksheet_number=1)
         data.items.reset_index(inplace=True)
         data.items.rename(columns={'index':'Paper ID'}, inplace=True)
         #reviewer_subject.replace(to_replace
@@ -1042,7 +1051,7 @@ class tpms:
         #download_url(url, writename)
         self.reviewers = []
         import csv
-        with open(writename, 'rb') as csvfile:
+        with open(writename, 'r') as csvfile:
             file_reader = csv.reader(csvfile, delimiter=',')
             for row in file_reader:
                 if len(row)>3:
@@ -1085,149 +1094,148 @@ class tpms:
 class ReadReviewer:
     def __init__(self, filename):
         self.filename = filename
-if pods.google.api_available:
 
-    class pc_groupings():
-        """This class handles the storage and processing of program committee groupings, between buddy pairs, or teleconference groups and the like. Groupings are read from a google document with columns that contain 1) an index to the group [index], 2) the name of the group [group], 3) the program chair responsible for the group [chair], 4) the email address of the the area chair in CMT [email], 5) optionally the gmail address to use for spreadsheet sharing etc. [gmail]"""
-        def __init__(self, resource_id, conflicts_file, assignment_file, worksheet_name='Sheet1'):
-            self.create_spreadsheet = True
-            self.resource_ids = {}
-            self.assignment = assignment()
-            self.assignment.load_assignment(filename=assignment_file, reviewer_type='metareviewer')
-            resource_ids_file = os.path.join(cmt_data_directory, resource_id + '.pickle')
-            self.docs_client = None
-            self.gd_client = None
-            #if these groups have been set up already, the pickle file of the spreadsheet keys should exist.
-            if os.path.isfile(resource_ids_file):
-                self.create_spreadsheet = False
-                self.resource_ids = pickle.load(open(resource_ids_file, 'rb'))
+class pc_groupings():
+    """This class handles the storage and processing of program committee groupings, between buddy pairs, or teleconference groups and the like. Groupings are read from a google document with columns that contain 1) an index to the group [index], 2) the name of the group [group], 3) the program chair responsible for the group [chair], 4) the email address of the the area chair in CMT [email], 5) optionally the gmail address to use for spreadsheet sharing etc. [gmail]"""
+    def __init__(self, resource_id, conflicts_file, assignment_file, worksheet_name='Sheet1'):
+        self.create_spreadsheet = True
+        self.resource_ids = {}
+        self.assignment = assignment()
+        self.assignment.load_assignment(filename=assignment_file, reviewer_type='metareviewer')
+        resource_ids_file = os.path.join(cmt_data_directory, resource_id + '.pickle')
+        self.docs_client = None
+        self.gd_client = None
+        #if these groups have been set up already, the pickle file of the spreadsheet keys should exist.
+        if os.path.isfile(resource_ids_file):
+            self.create_spreadsheet = False
+            self.resource_ids = pickle.load(open(resource_ids_file, 'rb'))
 
-            bp = pods.google.sheet(resource_id=resource_id, worksheet_name=worksheet_name)
-            self.groups = bp.read()
-            with open(os.path.join(cmt_data_directory, conflicts_file)) as fin:
-                rows = ( line.strip().split('\t') for line in fin)
-                conflicts_groups = { row[0]:row[1:] for row in rows}
-            papers = conflicts_groups.keys()
-            self.conflicts_by_area_chair = {}
-            self.conflicts_dict = {}
-            for paper in papers:
-                for area_chair in conflicts_groups[paper]:
-                    if self.conflicts_by_area_chair.has_key(area_chair):
-                        self.conflicts_by_area_chair[area_chair].append(paper)
+        bp = googoal.sheet.Sheet(resource_id=resource_id, worksheet_name=worksheet_name)
+        self.groups = bp.read()
+        with open(os.path.join(cmt_data_directory, conflicts_file)) as fin:
+            rows = ( line.strip().split('\t') for line in fin)
+            conflicts_groups = { row[0]:row[1:] for row in rows}
+        papers = conflicts_groups.keys()
+        self.conflicts_by_area_chair = {}
+        self.conflicts_dict = {}
+        for paper in papers:
+            for area_chair in conflicts_groups[paper]:
+                if self.conflicts_by_area_chair.has_key(area_chair):
+                    self.conflicts_by_area_chair[area_chair].append(paper)
+                else:
+                    self.conflicts_by_area_chair[area_chair] = [paper]
+        # Fields to extract from area chair's spreadsheets, rather than from the CMT derived reports.
+        self.update_field_list = ['notes', 'accept', 'talk', 'spotlight']
+
+        self.update_papers()
+        all_papers = []
+        for  papers in self._papers.values():
+            all_papers += papers
+        self.report = pd.DataFrame(index=all_papers)
+
+        comment="""Click Me for Notes!
+            Based on processed reviews form 2014/8/12.
+            This report gives the status of the papers that don't conflict within your buddy-group.
+            Please use it to identify papers where there may be ongoing problems.
+            Look out for papers with a high attention score and little or no discussion.
+            Your notes can be placed in the 'note' column.
+            Tentative accept/talk/spotlight decisions can be made by placing a 'y' for yes or 'm' for maybe in the relevant column."""
+        comment_conflicted="""These are papers that conflict with your buddy group, they will need to be dealt with separately.
+            Based on processed reviews form 2014/8/12."""
+
+    def update_report(self, groups=None):
+        """
+        Update the report with information from the spreadsheets.
+        """
+        if groups is None:
+            groups = self.resource_ids.keys()
+        for group in groups:
+            data_frame = self.data_from_spreadsheet(group)
+            self._to_report(group, data_frame)
+
+    def update_papers(self):
+        """Update the the lists of papers in the groups. """
+
+        self._papers = {}
+        for group in sorted(set(self.groups.index), key=int):
+            group_name = self.groups.loc[group].group[0]
+            self._papers[group_name] = []
+            group_df = self.groups.loc[group]
+            for index, area_chair in group_df.iterrows():
+                conflict_papers = []
+                for chair in group_df['email']:
+                    conflict_papers += self.conflicts_by_area_chair[chair]
+                    self.conflicts_dict[chair] = []
+                for paper in self.assignment.assignment_reviewer['metareviewer'][area_chair['email']]:
+                    if paper in conflict_papers:
+                        self.conflicts_dict[chair].append(paper)
                     else:
-                        self.conflicts_by_area_chair[area_chair] = [paper]
-            # Fields to extract from area chair's spreadsheets, rather than from the CMT derived reports.
-            self.update_field_list = ['notes', 'accept', 'talk', 'spotlight']
+                        self._papers[group_name].append(paper)
+            for index, area_chair in group_df.iterrows():
+                email = area_chair['email']
+                self._papers[email]=list(set(self.assignment.assignment_reviewer['metareviewer'][email]) - set(self._papers[group_name]))
 
-            self.update_papers()
-            all_papers = []
-            for  papers in self._papers.values():
-                all_papers += papers
-            self.report = pd.DataFrame(index=all_papers)
+    def _to_report(self, group, data_frame):
+        """Update the report with information pulled from the area chair."""
+        papers = self._papers[group]
+        for paper in papers:
+            if paper not in data_frame.index:
+                raise ValueError("Paper " + str(paper) + " not present in spreadsheet obtained from group.")
+        for paper in data_frame.index:
+            if paper not in papers:
+                print("Paper ", paper, " appears to have been withdrawn (it is not in the Attention Report).")
+        self.report = data_frame.loc[papers].combine_first(self.report)
 
-            comment="""Click Me for Notes!
-                Based on processed reviews form 2014/8/12.
-                This report gives the status of the papers that don't conflict within your buddy-group.
-                Please use it to identify papers where there may be ongoing problems.
-                Look out for papers with a high attention score and little or no discussion.
-                Your notes can be placed in the 'note' column.
-                Tentative accept/talk/spotlight decisions can be made by placing a 'y' for yes or 'm' for maybe in the relevant column."""
-            comment_conflicted="""These are papers that conflict with your buddy group, they will need to be dealt with separately.
-                Based on processed reviews form 2014/8/12."""
+    def data_from_spreadsheet(self, group):
+        """
+        Extract the data from one of the group's spreadsheets, return a
+        data frame containing the information.
+        """
+        ss = googoal.sheet.Sheet(resource=resource(id=self.resource_ids[group]), gd_client=self.gd_client, docs_client=self.docs_client)
+        self.gd_client = ss.gd_client
+        self.docs_client = ss.docs_client
+        return ss.read(header_rows=2)
 
-        def update_report(self, groups=None):
-            """
-            Update the report with information from the spreadsheets.
-            """
-            if groups is None:
-                groups = self.resource_ids.keys()
-            for group in groups:
-                data_frame = self.data_from_spreadsheet(group)
-                self._to_report(group, data_frame)
-
-        def update_papers(self):
-            """Update the the lists of papers in the groups. """
-
-            self._papers = {}
-            for group in sorted(set(self.groups.index), key=int):
-                group_name = self.groups.loc[group].group[0]
-                self._papers[group_name] = []
-                group_df = self.groups.loc[group]
-                for index, area_chair in group_df.iterrows():
-                    conflict_papers = []
-                    for chair in group_df['email']:
-                        conflict_papers += self.conflicts_by_area_chair[chair]
-                        self.conflicts_dict[chair] = []
-                    for paper in self.assignment.assignment_reviewer['metareviewer'][area_chair['email']]:
-                        if paper in conflict_papers:
-                            self.conflicts_dict[chair].append(paper)
-                        else:
-                            self._papers[group_name].append(paper)
-                for index, area_chair in group_df.iterrows():
-                    email = area_chair['email']
-                    self._papers[email]=list(set(self.assignment.assignment_reviewer['metareviewer'][email]) - set(self._papers[group_name]))
-
-        def _to_report(self, group, data_frame):
-            """Update the report with information pulled from the area chair."""
-            papers = self._papers[group]
-            for paper in papers:
-                if paper not in data_frame.index:
-                    raise ValueError("Paper " + str(paper) + " not present in spreadsheet obtained from group.")
-            for paper in data_frame.index:
-                if paper not in papers:
-                    print("Paper ", paper, " appears to have been withdrawn (it is not in the Attention Report).")
-            self.report = data_frame.loc[papers].combine_first(self.report)
-
-        def data_from_spreadsheet(self, group):
-            """
-            Extract the data from one of the group's spreadsheets, return a
-            data frame containing the information.
-            """
-            ss = pods.google.sheet(resource=resource(id=self.resource_ids[group]), gd_client=self.gd_client, docs_client=self.docs_client)
-            self.gd_client = ss.gd_client
-            self.docs_client = ss.docs_client
-            return ss.read(header_rows=2)
-
-        def data_to_spreadsheet(self, group, data_frame, comment=''):
-            """Update the spreadsheet with the latest version of the group report."""
-            ss = pods.google.sheet(resource=self.resource[group], gd_client=self.gd_client, docs_client=self.docs_client,)
-            self.gd_client = ss.gd_client
-            self.docs_client = ss.docs_client
-            ss.write(data_frame, comment=comment, header_rows=2)
+    def data_to_spreadsheet(self, group, data_frame, comment=''):
+        """Update the spreadsheet with the latest version of the group report."""
+        ss = googoal.sheet.Sheet(resource=self.resource[group], gd_client=self.gd_client, docs_client=self.docs_client,)
+        self.gd_client = ss.gd_client
+        self.docs_client = ss.docs_client
+        ss.write(data_frame, comment=comment, header_rows=2)
 
 
-    class drive_store(pods.google.sheet, ReadReviewer):
-        def __init__(self, resource, worksheet_name):
-            pods.google.sheet.__init__(self, resource=resource, worksheet_name=worksheet_name)
+class drive_store(googoal.sheet.Sheet, ReadReviewer):
+    def __init__(self, resource, worksheet_name):
+        googoal.sheet.Sheet.__init__(self, resource=resource, worksheet_name=worksheet_name)
 
-        def read(self, column_fields=None, header_rows=1, index_field='Email'):
-            """Read potential reviewer entries from a google doc."""
-            entries = pods.google.sheet.read(self, column_fields, header_rows)
+    def read(self, column_fields=None, header_rows=1, index_field='Email'):
+        """Read potential reviewer entries from a google doc."""
+        entries = googoal.sheet.Sheet.read(self, column_fields, header_rows)
 
-            # do some specific post-processing on columns
-            if 'ScholarID' in entries.columns:
-                entries['ScholarID'].apply(lambda value: re.sub('&.*', '', re.sub('.*user=', '', value.strip())) if not pd.isnull(value) else '')
-            if 'Email' in entries.columns:
-                entries['Email'].apply(lambda value: value.strip().lower() if not pd.isnull(value) else '')
-            if 'Name' in entries.columns:
-                entries['FirstName'], entries['MiddleNames'], entries['LastName']  = split_names(entries['Name'])
-            self.reviewers=entries
+        # do some specific post-processing on columns
+        if 'ScholarID' in entries.columns:
+            entries['ScholarID'].apply(lambda value: re.sub('&.*', '', re.sub('.*user=', '', value.strip())) if not pd.isnull(value) else '')
+        if 'Email' in entries.columns:
+            entries['Email'].apply(lambda value: value.strip().lower() if not pd.isnull(value) else '')
+        if 'Name' in entries.columns:
+            entries['FirstName'], entries['MiddleNames'], entries['LastName']  = split_names(entries['Name'])
+        self.reviewers=entries
 
-        def read_meta_reviewers(self):
-            column_fields={'1':'Name', '2':'Institute', '3':'Subjects', '4':'Email', '5':'Answer'}
-            self.read(column_fields)
+    def read_meta_reviewers(self):
+        column_fields={'1':'Name', '2':'Institute', '3':'Subjects', '4':'Email', '5':'Answer'}
+        self.read(column_fields)
 
 
-        def read_reviewer_suggestions(self):
-            """Read in reviewer suggestions as given by area chairs through the reviewer suggestion form."""
-            column_fields={'1':'TimeStamp', '2':'FirstName', '3':'LastName', '4':'MiddleNames', '5':'Email', '6':'Institute', '7':'Nominator', '9':'ScholarID'}
-            self.read(column_fields)
+    def read_reviewer_suggestions(self):
+        """Read in reviewer suggestions as given by area chairs through the reviewer suggestion form."""
+        column_fields={'1':'TimeStamp', '2':'FirstName', '3':'LastName', '4':'MiddleNames', '5':'Email', '6':'Institute', '7':'Nominator', '9':'ScholarID'}
+        self.read(column_fields)
 
-        def read_nips_reviewer_suggestions(self):
-            """Read in reviewer suggestions from lists of people who've had NIPS papers since a given year."""
-            yearkey = 'PapersSince' + year
-            column_fields={'1':'FirstName', '2':'MiddleNames', '3':'LastName', '4':'Email', '5':'Institute', '6':'ScholarID', '7':yearkey, '8':'decision'}
-            self.read(column_fields)
+    def read_nips_reviewer_suggestions(self):
+        """Read in reviewer suggestions from lists of people who've had NIPS papers since a given year."""
+        yearkey = 'PapersSince' + year
+        column_fields={'1':'FirstName', '2':'MiddleNames', '3':'LastName', '4':'Email', '5':'Institute', '6':'ScholarID', '7':yearkey, '8':'decision'}
+        self.read(column_fields)
 
 
 
@@ -1239,7 +1247,7 @@ class area_chair_read:
       if conference == 'nips':
           conference = 'ac'
       self.filename = conference + str(year) + '.txt'
-      fname = os.path.join(nips_data_directory, 'conference-committees', self.filename)
+      fname = os.path.join(cmt_data_directory, 'conference-committees', self.filename)
       self.chairs = []
       import csv
       with open(fname, 'rb') as csvfile:
@@ -1469,7 +1477,11 @@ class cmt_reviewers_read:
                    'Last Name': 'LastName',
                    'First Name': 'FirstName',
                    'Reviewer Type': 'ReviewerType'}
-        data = read_xl_or_csv(filename, header, mapping, index_col, dataframe)
+        data = read_xl_or_csv(filename=filename,
+                              header=header,
+                              mapping=mapping,
+                              index_col="Email",
+                              dataframe=dataframe)
         self.reviewers = data.items
 
 
@@ -2061,7 +2073,7 @@ def normalise(word):
     delim = '\t'
     word = word.lower()
     word = lemmatizer.lemmatize(word)
-    word = stemmer.stem_word(word)
+    word = stemmer.stem(word)
     return word
 
 def acceptable_word(word):
