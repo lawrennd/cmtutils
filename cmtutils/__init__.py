@@ -1,2 +1,2 @@
-from . import cmtutils
+from .cmtutils import *
 from . import nipsy

@@ -108,7 +108,7 @@ default_mapping['ScholarID'] = 'ScholarID'
 default_mapping['Nominator'] = 'Nominator'
 
 
-class review_report:
+class Review_report:
     """
     Class that looks at calibrated reviews and generates text reports or email reports based on review sumaries.
     """
@@ -485,7 +485,7 @@ class review_report:
             comment += c
         return comment
 
-class reviewers:
+class Reviewers:
     """
     Reviewer class that combines information from the local data base
     and exports from CMT on the reviewer subject areas to characterize the
@@ -502,7 +502,7 @@ class reviewers:
         print("Loaded Reviewer Subjects.")
 
     def load(self, filename='users.xls', localdb='reviewers.db'):
-        a = xl_read(filename=filename, header=2, index_col='Email', dataframe=True, lower_index=True)
+        a = XL_Read(filename=filename, header=2, index_col='Email', dataframe=True, lower_index=True)
         cmt_users = a.items
         # Now load in the local store of information
         con = sqlite3.connect(os.path.join(cmt_data_directory, localdb))
@@ -513,7 +513,7 @@ class reviewers:
 
     def load_subjects(self, filename='Reviewer Subject Areas.xls'):
         """Load the reviewer's chosen subject areas from the CMT export file."""
-        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Selected Subject Area', header=2, dataframe=True, worksheet_number=1)
+        data = XL_Read(filename=os.path.join(self.directory, filename), index_col='Selected Subject Area', header=2, dataframe=True, worksheet_number=1)
         data.items.reset_index(inplace=True)
         #reviewer_subject.replace(to_replace
         data.items['index'] = data.items.index
@@ -526,7 +526,7 @@ class reviewers:
             self.subjects[status].fillna(0, inplace=True)
             self.subjects[status].columns = map(str.lower, self.subjects[status].columns)
 
-class papers:
+class Papers:
     """
     Paper class that loads information from CMT about the papers'
     subject areas for use in paper to reviewer matching
@@ -543,12 +543,12 @@ class papers:
 
     def load(self, filename='Papers.xls'):
         """Load in the information about the papers, abstracts, titles, authors etc from CMT exports. `Submissions -> View Active Papers -> Export -> Metadata as Excel`"""
-        a = xl_read(filename=filename, header=2, index_col='ID', dataframe=True)
+        a = XL_Read(filename=filename, header=2, index_col='ID', dataframe=True)
         self.papers = a.items
 
     def load_subjects(self, filename = 'Paper Subject Areas.xls'):
         """Load paper subject areas from a CMT export file."""
-        data = xl_read(filename=os.path.join(self.directory, filename), index_col='Paper ID', header=2, dataframe=True, worksheet_number=1)
+        data = XL_Read(filename=os.path.join(self.directory, filename), index_col='Paper ID', header=2, dataframe=True, worksheet_number=1)
         data.items.reset_index(inplace=True)
         data.items.rename(columns={'index':'Paper ID'}, inplace=True)
         #reviewer_subject.replace(to_replace
@@ -560,7 +560,7 @@ class papers:
             self.subjects[status].replace(to_replace=list(set(stati) - set([status])), value=[0], inplace=True)
             self.subjects[status].fillna(0, inplace=True)
 
-class similarities:
+class Similarities:
     """
     Similarities class, given a papers class object in submissions and
     a reviewers class object as reviewers it computes the similarity
@@ -644,7 +644,7 @@ class similarities:
         self.affinity.columns = map(str.lower, self.affinity.columns)
         for reviewer in list(set(self.reviewers.users[self.reviewers.users['IsReviewer']=='Yes'].index) - set(self.affinity.columns)):
             self.affinity[reviewer.strip()] = 0.
-        #data = xl_read(, index_col='Paper ID', dataframe=True)
+        #data = XL_Read(, index_col='Paper ID', dataframe=True)
         #affinity = data.items
         # Scale affinities to be between 0 and 1.
         self.affinity -= self.affinity.values.min()
@@ -677,7 +677,7 @@ class similarities:
         self.scores = (alpha*self.affinity + (1-alpha)*self.subject_similarity)
         self.scores = self.scores*b**self.bids
 
-class assignment_diff:
+class Assignment_diff:
     """
     Stores the difference between two assignments. This is useful for
     finding reviewers who have gained allocations or lost allocations
@@ -746,7 +746,7 @@ class assignment_diff:
         return score
 
 
-class assignment:
+class Assignment:
     """
     Stores an assignment of reviewers to papers. The assignment can
     either be loaded (e.g. as an export from CMT) in or allocated
@@ -863,7 +863,7 @@ class assignment:
         print("Performed allocation")
 
     def load_quota(self, filename='Reviewer Quotas.xls'):
-        a = xl_read(filename=os.path.join(self.directory, filename), header=2, index_col='Reviewer Email', dataframe=True, lower_index=True)
+        a = XL_Read(filename=os.path.join(self.directory, filename), header=2, index_col='Reviewer Email', dataframe=True, lower_index=True)
         self.quota = a.items
 
     def unassigned_reviewers(self, reviewers, reviewer_type='reviewer', group=None):
@@ -1040,7 +1040,7 @@ class assignment:
         f.write('</assignments>\n')
         f.close()
 
-class tpms:
+class TPMS:
     """
     """
     def __init__(self, filename='cmt_export.txt'):
@@ -1095,7 +1095,7 @@ class ReadReviewer:
     def __init__(self, filename):
         self.filename = filename
 
-class pc_groupings():
+class PC_Groupings():
     """This class handles the storage and processing of program committee groupings, between buddy pairs, or teleconference groups and the like. Groupings are read from a google document with columns that contain 1) an index to the group [index], 2) the name of the group [group], 3) the program chair responsible for the group [chair], 4) the email address of the the area chair in CMT [email], 5) optionally the gmail address to use for spreadsheet sharing etc. [gmail]"""
     def __init__(self, resource_id, conflicts_file, assignment_file, worksheet_name='Sheet1'):
         self.create_spreadsheet = True
@@ -1204,7 +1204,7 @@ class pc_groupings():
         ss.write(data_frame, comment=comment, header_rows=2)
 
 
-class drive_store(googoal.sheet.Sheet, ReadReviewer):
+class Drive_store(googoal.sheet.Sheet, ReadReviewer):
     def __init__(self, resource, worksheet_name):
         googoal.sheet.Sheet.__init__(self, resource=resource, worksheet_name=worksheet_name)
 
@@ -1239,7 +1239,7 @@ class drive_store(googoal.sheet.Sheet, ReadReviewer):
 
 
 
-class area_chair_read:
+class Area_chair_read:
   """
   This class reads area chairs from previous conferences
   """
@@ -1266,7 +1266,7 @@ class area_chair_read:
               self.chairs.append(chair)
 
 # legacy code used in Update with NIPS Paper Publications.ipynb
-class old_csv_read(ReadReviewer):
+class old_CSV_read(ReadReviewer):
     def __init__(self, filename='users.csv', header_row=1):
         self.filename = filename
         self.reviewers = []
@@ -1289,9 +1289,9 @@ class old_csv_read(ReadReviewer):
                         reviewer[field[i]] = entry
                     self.reviewers.append(reviewer)
 
-class csv_read:
+class CSV_Read:
     """
-    Read a data frame from a csv file in a similar format as xl_read to allow csv and xls to be loaded interchangeably.
+    Read a data frame from a csv file in a similar format as XL_Read to allow csv and xls to be loaded interchangeably.
     """
     def __init__(self, filename='file.csv', header=0, mapping=None, index_col=None, lower_index=False, ignore = [], parse_dates = []):
         self.items = pd.read_csv(filename, header=header, parse_dates=parse_dates)
@@ -1299,7 +1299,7 @@ class csv_read:
         self.items.set_index(index_col, inplace=True)
         self.filename = filename
 
-class xl_read:
+class XL_Read:
     """
     Read a data frame from an excel file in the form CMT exports (which is XML derived).
     """
@@ -1390,7 +1390,7 @@ class xl_read:
         else:
             self.items = items
 # Read CMT Reviews
-class cmt_reviews_read:
+class CMT_Reviews_read:
     """
     Read an export of the reviews from CMT.
     """
@@ -1409,7 +1409,7 @@ class cmt_reviews_read:
         self.reviews = data.items
 
 # Read CMT Papers
-class cmt_papers_read:
+class CMT_Papers_read:
     """
     Read list of papers exported from CMT under the 'decision' column.
     """
@@ -1429,7 +1429,7 @@ class cmt_papers_read:
         self.papers = data.items
 
 # Read CMT metareviews
-class cmt_metareviews_read(xl_read):
+class CMT_Metareviews_read(XL_Read):
     """
     Read the metareviews from CMT for analysis.
     """
@@ -1442,31 +1442,31 @@ class cmt_metareviews_read(xl_read):
                    'Email' : 'Email',
                    'Overall Rating (Numeric)' : 'Rating',
                    'Detailed Comments' : 'Comments'}
-        xl_read.__init__(self, filename, header_row, mapping, index='ID', dataframe=dataframe, ignore=ignore)
+        XL_Read.__init__(self, filename, header_row, mapping, index='ID', dataframe=dataframe, ignore=ignore)
         self.reviews = self.items
 
 # Read CMT Author Feedback Status
-class cmt_authorfeedback_read(xl_read):
+class CMT_Authorfeedback_read(XL_Read):
     """
     Read Author Feedback Status for analysis.
     """
     def __init__(self, filename='Papers.xls', header_row=3, dataframe=True):
         mapping = {'Paper ID': 'ID',
                    'Author Feedback Submitted': 'feedbackStatus'}
-        xl_read.__init__(self, filename, header_row, mapping, index='ID', dataframe=dataframe)
+        XL_Read.__init__(self, filename, header_row, mapping, index='ID', dataframe=dataframe)
         self.papers = self.items
 
 def read_xl_or_csv(filename, header, mapping, index_col, dataframe, parse_dates=None):
     """Helper function for switching between xls and csv reads."""
     _, ext = os.path.splitext(filename)
     if ext == '.xls':
-        return xl_read(filename, header, mapping, index_col=index_col, dataframe=dataframe, parse_dates=parse_dates)
+        return XL_Read(filename, header, mapping, index_col=index_col, dataframe=dataframe, parse_dates=parse_dates)
     elif ext == '.csv':
-        return csv_read(filename, header, mapping, index_col=index_col, parse_dates=parse_dates)
+        return CSV_Read(filename, header, mapping, index_col=index_col, parse_dates=parse_dates)
     else:
         raise ValueError("Unknown file extension: " + ext)
 
-class cmt_reviewers_read:
+class CMT_Reviewers_read:
     """
     Read information from a CMT export file into the standard Reviewers
     format.
@@ -1482,11 +1482,17 @@ class cmt_reviewers_read:
                               mapping=mapping,
                               index_col="Email",
                               dataframe=dataframe)
-        self.reviewers = data.items
+        self._reviewers = data
 
+    @property
+    def reviewers(self):
+        return self._reviewers
 
+    @reviewers.setter
+    def reviewers(self, value):
+        self._reviewers = value
 
-class reviewerdb:
+class Reviewerdb:
     def __init__(self, filename):
         self.filename=filename
         self.dbfile = os.path.join(cmt_data_directory,self.filename)
