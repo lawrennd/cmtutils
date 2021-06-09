@@ -8,7 +8,6 @@ import os
 
 from cmtutils.config import *
 
-
 # Date of different review events.
 events = {}
 # Time stamps from CMT are on separate time? If so add here
@@ -49,8 +48,11 @@ def plot_deadlines(ax):
     "Plot the deadlines for the different reviewing stages"
     for event in events.keys():
         plt.axvline(events[event])
-    ax.set_xticks(events.values())
-    ax.set_xticklabels(events.keys(), rotation=90 )
+    ylim = ax.get_ylim()
+    yval = ylim[0] + (ylim[1]-ylim[0])/2
+    for key, val in events.items():
+        ax.text(val, yval, key.replace("_", " "), rotation=90 )
+
 
 
 def evolving_statistic(reviews, column, window=4):
