@@ -13,6 +13,8 @@ from lxml import etree # for reading from CMT
 from html.parser import HTMLParser
 # General set up.
 
+from IPython.display import HTML
+
 from pods.util import download_url
 
 def display_url(target):
@@ -191,7 +193,7 @@ class Review_report:
 
         for email, papers in sendto_dict.items():
             print("Sending mails summarizing papers", ', '.join(papers), 'to', email)
-        ans = raw_input('Are you sure you want to send mails (Y/N)?')
+        ans = input('Are you sure you want to send mails (Y/N)?')
         if ans=='Y':
             mailer = gmail.email(gmail_username=gmail_account)
             for email, papers in sendto_dict.items():
@@ -1589,7 +1591,7 @@ class Reviewerdb:
         string = u''
         for row in table:
             for col in row:
-                string += unicode(col) + '\t'
+                string += str(col) + '\t'
             string+='\n'
         return string
 
@@ -1642,7 +1644,7 @@ class Reviewerdb:
                 fieldvalue = 'NULL'
             elif isinstance(fieldvalue, float) and np.isnan(fieldvalue):
                 fieldvalue = 'NULL'
-            elif isinstance(fieldvalue, str) or isinstance(fieldvalue, unicode):
+            elif isinstance(fieldvalue, str) or isinstance(fieldvalue, str):
                 fieldvalue = "'" + fieldvalue.strip().replace("'", "''") + "'"
             else:
                 fieldvalue = str(fieldvalue)
@@ -1666,7 +1668,7 @@ class Reviewerdb:
         if fieldname:
             if not fieldvalue:
                 fieldvalue = 'NULL'
-            elif isinstance(fieldvalue, str) or isinstance(fieldvalue, unicode):
+            elif isinstance(fieldvalue, str) or isinstance(fieldvalue, str):
                 fieldvalue = "'" + fieldvalue.strip().replace("'", "''") + "'"
             else:
                 fieldvalue = str(fieldvalue)
@@ -1798,7 +1800,7 @@ class Reviewerdb:
             print_string += (self._string_sql("SELECT ID, FirstName, LastName FROM Reviewers WHERE ID=" + str(id[0]))).strip()
             print_string += '\n'
         print(print_string)
-        ans = raw_input(reviewer['FirstName'] + ' ' + reviewer['LastName'] +  " add to a given ID. Reply N to add new user? N")
+        ans = input(reviewer['FirstName'] + ' ' + reviewer['LastName'] +  " add to a given ID. Reply N to add new user? N")
         if ans == 'N' or ans=='n' or ans=='':
             return None
         else:
@@ -1840,7 +1842,7 @@ class Reviewerdb:
 
         if not yes:
             print("Add reviewer ", reviewer['FirstName'], reviewer['MiddleNames'], reviewer['LastName'], "of", reviewer['Institute'], "with email", reviewer['Email'], "?")
-            ans = raw_input("(Y/N): N?")
+            ans = input("(Y/N): N?")
             if not ans=='Y' and not ans=='y':
                 return self._request_new_reviewer(reviewer)
         self.add_reviewers([reviewer], check_email=True)
@@ -1850,9 +1852,9 @@ class Reviewerdb:
         if not query:
             return variable
         if variable=='' or variable==None:
-            return raw_input(prompt)
+            return input(prompt)
         else:
-            ans = raw_input(prompt + '(default: ' + unicode(variable) + ')')
+            ans = input(prompt + '(default: ' + str(variable) + ')')
             if not ans == '':
                 return ans
         return variable
@@ -2014,9 +2016,8 @@ class Reviewerdb:
         for row in rows:
             output+= row[0][0]+ '\t'+ row[0][1]+ '\t'+ row[0][2]+ '\t'+ row[0][3]+ '\t'+ row[0][4] + '\t' + 'http://scholar.google.com/citations?user='+row[0][5] + '\n'
 
-        f = open(outputfile, 'w')
-        f.write(output.encode('utf8'))
-        f.close()
+        with open(outputfile, 'w', encoding='utf8') as f:
+            f.write(output)
 
     def export_nips_papers(self, filename='cmt_export.tsv', sql='Active=1'):
         outputfile= os.path.join(cmt_data_directory,filename)
@@ -2028,13 +2029,12 @@ class Reviewerdb:
         output="First Name\tMiddle Initial\tLast Name\tEmail\tOrganization\tScholarID\tPapers Since 2012\n"
         for row in rows:
             if row[5]:
-                output+= row[0]+ '\t'+ row[1]+ '\t'+ row[2]+ '\t'+ row[3]+ '\t'+ row[4] + '\t' + 'http://scholar.google.com/citations?user=' + row[5] + '\t' + unicode(row[6]) + '\n'
+                output+= row[0]+ '\t'+ row[1]+ '\t'+ row[2]+ '\t'+ row[3]+ '\t'+ row[4] + '\t' + 'http://scholar.google.com/citations?user=' + row[5] + '\t' + str(row[6]) + '\n'
             else:
-                output+= row[0]+ '\t'+ row[1]+ '\t'+ row[2]+ '\t'+ row[3]+ '\t'+ row[4] + '\t\t' + unicode(row[6]) + '\n'
+                output+= row[0]+ '\t'+ row[1]+ '\t'+ row[2]+ '\t'+ row[3]+ '\t'+ row[4] + '\t\t' + str(row[6]) + '\n'
 
-        f = open(outputfile, 'w')
-        f.write(output.encode('utf8'))
-        f.close()
+        with open(outputfile, 'w', encoding='utf8') as f:
+            f.write(output)
 
     def export_reviewers(self, filename='cmt_export.tsv', sql='Active=1'):
         outputfile= os.path.join(cmt_data_directory,filename)
@@ -2049,9 +2049,8 @@ class Reviewerdb:
             else:
                 output+= row[0]+ '\t'+ row[1]+ '\t'+ row[2]+ '\t'+ row[3]+ '\t'+ row[4] + '\t\n'
 
-        f = open(outputfile, 'w')
-        f.write(output.encode('utf8'))
-        f.close()
+        with open(outputfile, 'w', encoding='utf8') as f:
+            f.write(output)
 
     def export_tpm(self, filename='tpm_export.csv', sql='IsReviewer=1'):
         outputfile= os.path.join(cmt_data_directory,filename)
@@ -2063,9 +2062,8 @@ class Reviewerdb:
         for row in rows:
             output+= row[0]+ ','+ row[1]+ ','+ row[2]+ '\n'
 
-        f = open(outputfile, 'w')
-        f.write(output.encode('utf8'))
-        f.close()
+        with open(outputfile, 'w', encoding='utf8') as f:
+            f.write(output)
 
 
 def normalise(word):
