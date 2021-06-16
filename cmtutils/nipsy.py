@@ -22,6 +22,7 @@ review_date_range = pd.date_range('2014/07/01', periods=72, freq='D')
 review_store = os.path.expandvars(config.get('review data', 'directory'))
 review_file = os.path.expandvars(config.get('review data', 'file'))
 final_decisions_file = os.path.expandvars(config.get('review data', 'final_decisions'))
+outlet_name_mapping = os.path.expandvars(config.get('review data', 'outlet_name_mapping'))
 
 def load_semantic_ids():
     """Load in the semantic scholar ids."""
@@ -57,7 +58,7 @@ def augment_decisions(decisions):
         decisions['average_' + col] = decisions[col].apply(avg_vals)
     decisions['accept'] = ((decisions.Status=="Poster") | (decisions.Status=="Spotlight") | (decisions.Status=="Oral"))
     decisions['reject'] = (decisions.Status=="Reject")
-
+    decisions['all'] = pd.Series(data=True, index=decisions.index)
         
 def join_decisions_citations(decisions, citations):
     joindf = decisions.join(citations)
@@ -66,6 +67,7 @@ def join_decisions_citations(decisions, citations):
     joindf.loc[(joindf.venue==''),'venue'] = "None"
     joindf['reject_not_arxiv'] = ((joindf.Status=="Reject") & (joindf.venue != "ArXiv") & (joindf.venue != "None"))
     joindf['reject_arxiv'] = ((joindf.Status=="Reject") & (joindf.venue == "ArXiv"))
+    joindf['published'] = ((joindf.accept) | (joindf.reject_not_arxiv))
     return joindf
 
 def get_scholar(url, timeout):
