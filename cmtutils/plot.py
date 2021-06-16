@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import cmtutils.nipsy as nipsy
 
+import scipy
+
 three_figsize = (10, 3)
 two_figsize = (10, 5)
 one_figsize = (5, 5)
