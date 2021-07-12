@@ -78,9 +78,9 @@ def log_one_citations(column, decisions, filt=None, ax=None):
             index = ind
         full_index = (index | full_index)
         xvals = decisions.loc[index][column]
-        xvals += scipy.stats.laplace(scale=0.2, loc=0, size=xvals.shape)
+        xvals += scipy.stats.laplace.rvs(scale=0.2, loc=0, size=xvals.shape)
         yvals = np.log10(1+decisions.loc[index]['numCitedBy'])
-        yvals += scipy.stats.laplace(scale=0.1, loc=0, size=yvals.shape)
+        yvals += scipy.stats.laplace.rvs(scale=0.1, loc=0, size=yvals.shape)
         ax.plot(xvals, yvals, symbol)
     ax.set_xlabel(column.replace("_", " "))
     ax.set_ylabel(r"log10(1+citations)")
