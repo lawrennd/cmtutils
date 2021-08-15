@@ -70,7 +70,7 @@ def log_one_citations(column, decisions, filt=None, ax=None):
     full_index = pd.Series(data=False, index=decisions.index)
     for ind, symbol in zip(
             [decisions.accept, decisions.reject_not_arxiv, decisions.reject_arxiv],
-            ['g.', 'gx', 'bx']
+            ['gs', 'g^', 'bv']
             ):
         if filt is not None:
             index = (filt & ind)
