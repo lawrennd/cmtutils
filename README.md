@@ -27,7 +27,7 @@ we moved things much more towards `pandas` and used CMT as the central
 repository of reviews, exporting them on a daily basis.
 
 A lot of communication was required between CMT through imports and exports. Some
-of the links used for CMT exports are available [here](http://nbviewer.ipython.org/github/sods/conference/blob/master/Useful Links.ipynb).
+of the links used for CMT exports are available [here](http://nbviewer.ipython.org/github/sods/conference/blob/master/Useful%20Links.ipynb).
 The various tasks are structured in IPython notebooks in the conference repo. The code used was
 first written for the NIPS 2014 conference, but ideas were based on experience
 from using CMT for AISTATS 2012 and some preliminary code written then (for
@@ -42,7 +42,7 @@ software has been spun out as part of a suite of tools for [Open Data
 Science](http://inverseprobability.com/2014/07/01/open-data-science/) that is
 [available on github here](https://github.com/sods/ods). These notebooks are
 also available in their own [github repository for conference
-software](https://github.com/sods/conference).
+software](https://github.com/lawrennd/neurips2014).
 
 A note on the code. A lot of this code was written 'live' as reviews were coming
 in or as a crisis required averting. The original code for sharing information
