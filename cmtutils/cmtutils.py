@@ -15,7 +15,7 @@ from html.parser import HTMLParser
 
 from IPython.display import HTML
 
-from pods.util import download_url
+from pods.access import download_url
 
 def display_url(target):
     """Displaying URL in an IPython notebook to allow the user to click and check on information. With thanks to Fernando Perez for putting together the implementation!
