@@ -57,7 +57,7 @@ example of how the notebook can be used with python and `pandas`to do 'live'
 data processing of some importance whilst under a great deal of pressure. I
 can't imagine having done it quite like this with a different suite of tools.
 
-As well as the installed files, you need to create a file called `.cmt_user.cfg` in your home directory and give it the following fields:
+As well as the installed files, you need to create a file called `.cmt_user.cfg` in **your home directory** and give it the following fields:
 
 ```
 # This is a user's personal configuration file for CMT
@@ -84,4 +84,6 @@ global_results_key =
 [review data]
 directory = 
 file = all_reviews.pickle
+final_decisions =
+outlet_name_mapping =
 ```
