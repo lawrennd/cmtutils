@@ -38,6 +38,8 @@ def load_decisions():
                                     final_decisions_file), 
                        sheet_name="Final Decisions", 
                        converters={"index" : int})
+    # Remove rows with NaN as index (caused by count checks at bottome of sheet).
+    decisions = decisions.loc[decisions.index.dropna()]
     return decisions.set_index(decisions['index'].apply(str))
 
 def load_citation_counts(date="2021-06-11"):
@@ -61,7 +63,7 @@ def augment_decisions(decisions):
     decisions['all'] = pd.Series(data=True, index=decisions.index)
         
 def join_decisions_citations(decisions, citations):
-    joindf = decisions.join(citations)
+    joindf = decisions.join(citations, )
     # Set papers with no venue but with ArXiv ID as having ArXiv venue
     joindf.loc[(joindf.venue=='') & (~pd.isna(joindf.arxivId)),'venue'] = "ArXiv"
     joindf.loc[(joindf.venue==''),'venue'] = "None"
