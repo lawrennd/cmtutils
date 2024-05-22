@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "cmtutils"
+version = "0.1.2"
+description = "Package of utility files for working with CMT 2.0 from NeurIPS 2014."
+authors = ["Neil D. Lawrence <lawrennd@gmail.com>"]
+homepage = "https://github.com/lawrennd/cmtutils"
+license = "MIT"
+readme = "README.md"
+include = [
+{ path = "defaults.cfg", format = ["sdist", "wheel"] },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+openpyxl = "*"
+googoal = "*"
+pods = "*"
+pandas = "*"
+lxml = "*"
+
+[tool.poetry.dev-dependencies]
+# Add your dev dependencies here if necessary
+
+    
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+# Optional dependencies
+# [tool.poetry.extras]
+# fancy-feature = ["django"]
